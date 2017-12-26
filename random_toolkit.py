@@ -183,3 +183,22 @@ def clean(df):
 
     return df
 
+from bokeh.io import show,output_notebook,output_file,save
+from bokeh.models import ColumnDataSource, ColorBar, LinearColorMapper, LogColorMapper
+from bokeh.palettes import Viridis256
+from bokeh.plotting import figure
+
+def corr_heatmap(df,output_html):
+    df_corr = df.corr().unstack().reset_index()
+    df_corr.columns=['x','y','corr']
+    
+    source =  ColumnDataSource(df_corr)
+    mapper = LinearColorMapper(palette=Viridis256,high=1,low=-1)
+    p = figure(toolbar_location=None, tools='',x_range=df_corr.x.unique(),y_range=df_corr.y.unique())
+    p.rect(x='x',y='y',width=1,height=1,source=source, fill_color={'field':'corr','transform':mapper},line_color=None)
+    colorb = ColorBar(color_mapper=mapper,location=(0,0))
+    p.add_layout(colorb,'right')
+    p.xaxis.major_label_orientation = 45
+    output_file(output_html)
+    save(p)
+
