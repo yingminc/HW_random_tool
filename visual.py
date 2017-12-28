@@ -1,7 +1,11 @@
 import pandas as pd
 from bokeh.io import show,output_notebook,output_file, export_png
-from bokeh.models import (DatetimeTickFormatter,Range1d,ColumnDataSource, HoverTool, CategoricalColorMapper,FixedTicker,FuncTickFormatter,ColorBar)
+from bokeh.models import (DatetimeTickFormatter,Range1d,ColumnDataSource, HoverTool, CategoricalColorMapper,
+	FixedTicker,FuncTickFormatter,ColorBar,LinearColorMapper)
 from bokeh.plotting import figure
+from bokeh.palettes import Viridis256
+import matplotlib.pyplot as plt
+from statsmodels.graphics.tsaplots import plot_acf
 import pickle
 import datetime as dt
 import os
@@ -134,6 +138,59 @@ for highway in highways:
 			print highway,direction,date
 			d = visual_data(od, date, lamp_in=False)
 			make_figure(d)
+
+#correlation heatmap
+def corr_heatmap(df,output_html):
+    df_corr = df.corr().unstack().dropna().reset_index()
+    df_corr.columns=['x','y','corr']
+    
+    toolbar = 'hover,save,pan,box_zoom,reset,wheel_zoom'
+    source =  ColumnDataSource(df_corr)
+    mapper = LinearColorMapper(palette=Viridis256,high=1,low=-1)
+    p = figure(tools=toolbar,toolbar_sticky=False,
+               x_range=df_corr.x.unique(),y_range=df_corr.y.unique(),
+              width=900,height=800)
+    p.rect(x='x',y='y',width=1,height=1,source=source, fill_color={'field':'corr','transform':mapper},
+           fill_alpha=0.7,line_color=None)
+    
+    colorb = ColorBar(color_mapper=mapper,location=(0,0),scale_alpha=0.7)
+    p.add_layout(colorb,'right')
+    p.xaxis.major_label_orientation = 45
+    
+    p.grid.grid_line_alpha=0
+    
+    hover = p.select_one(HoverTool)
+    hover.tooltips = [('feature_0','@x'),("feature_1","@y"),("corr","@corr")]
+    
+    output_file(output_html)
+    save(p)
+
+#autocorrelation (make sure no multiple kp data mix together)
+def auto_corr(dd,target_col,outputname,showfig=True, savefig=True):
+    t_col = target_col
+    
+    fig, ax = plt.subplots(nrows=4,figsize=(15,30))
+    fig.suptitle('{}'.format(outputname))
+    plot_acf(dd[t_col],lags=72,unbiased=True,alpha=0.05,ax=ax[0])
+    ax[0].set_title('6 hr')
+    ax[0].set_ylabel('correlation')
+    ax[0].set_xlabel('lag(5min)')
+    plot_acf(dd[t_col],lags=288*1,unbiased=True,alpha=0.05,ax=ax[1])
+    ax[1].set_title('1 day')
+    ax[1].set_ylabel('correlation')
+    ax[1].set_xlabel('lag(5min)')
+    plot_acf(dd[t_col],lags=288*3,unbiased=True,alpha=0.05,ax=ax[2])
+    ax[2].set_title('3 day')
+    ax[2].set_ylabel('correlation')
+    ax[2].set_xlabel('lag(5min)')
+    plot_acf(dd[t_col],lags=288*7,unbiased=True,alpha=0.05,ax=ax[3])
+    ax[3].set_title('1 week')
+    ax[3].set_ylabel('correlation')
+    ax[3].set_xlabel('lag(5min)')
+    if savefig:
+    	plt.savefig('{}.png'.format(outputname))
+    if showfig:
+		plt.show()
 
 
 
