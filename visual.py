@@ -6,6 +6,8 @@ from bokeh.plotting import figure
 from bokeh.palettes import Viridis256
 import matplotlib.pyplot as plt
 from statsmodels.graphics.tsaplots import plot_acf
+import matplotlib.patches as mpatches
+import seaborn as sns
 import pickle
 import datetime as dt
 import os
@@ -191,6 +193,21 @@ def auto_corr(dd,target_col,outputname,showfig=True, savefig=True):
     	plt.savefig('{}.png'.format(outputname))
     if showfig:
 		plt.show()
+
+def cat_heatmap(filename, df, cat2value_dict, cmap= 'Pastel1_r', figsize=(11,10), alpha=1):
+
+    fig, ax =plt.subplots(figsize=figsize)
+    sns.heatmap(hm.T, cmap=cmap, square=True,linewidths=0.5,cbar=False, ax=ax, alpha=alpha, show=False)
+
+    color_arr = plt.cm.Pastel1_r(cat2value_dict.values())
+    color_arr[:,3]=alpha
+
+    colors = [mpatches.Patch(facecolor=c) for c in color_arr]
+
+    ax.legend(colors,cat2value_dict.keys(), loc=5, bbox_to_anchor=(1.3,0.9))
+    plt.savefig(filename)
+    if show:
+        plt.show()
 
 
 
